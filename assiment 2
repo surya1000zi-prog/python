@@ -1,1 +1,56 @@
 
+import time
+
+# Original recursive method
+calls = 0
+
+def original(n):
+    global calls
+    calls += 1
+
+    if n <= 1:
+        return 1
+
+    return original(n-1) + original(n-2)
+
+
+# Redesigned iterative method
+def redesigned(n):
+    a, b = 1, 1
+    steps = 0
+
+    for i in range(2, n+1):
+        a, b = b, a+b
+        steps += 1
+
+    return a if n == 0 else b, steps
+
+
+# Compare both methods
+n = 25
+
+start = time.perf_counter()
+calls = 0
+result1 = original(n)
+time1 = time.perf_counter() - start
+
+start = time.perf_counter()
+result2, steps = redesigned(n)
+time2 = time.perf_counter() - start
+
+print("Q7 - Performance Comparison")
+print("---------------------------")
+print("Number of steps:", n)
+
+print("\nOriginal Recursive Method")
+print("Ways:", result1)
+print("Function calls:", calls)
+print("Execution time:", round(time1, 6), "seconds")
+
+print("\nRedesigned Iterative Method")
+print("Ways:", result2)
+print("Loop iterations:", steps)
+print("Execution time:", round(time2, 6), "seconds")
+
+print("\nResults are same:", result1 == result2)
+

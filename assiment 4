@@ -1,1 +1,137 @@
 
+import os
+
+# Create sample department files
+os.makedirs("fest_data", exist_ok=True)
+os.makedirs("event_lists", exist_ok=True)
+
+data = {
+    "CSE.txt": [
+        "101,Sabiha,CSE,sabiha@gmail.com,Coding;Dance",
+        "102,Asha,CSE,asha@gmail.com,Dance;Music"
+    ],
+    "ECE.txt": [
+        "103,Rahul,ECE,rahul@gmail.com,Coding;Music",
+        "101,Sabiha,CSE,sabiha@gmail.com,Coding;Dance",
+        "104,Meena,ECE,meenagmail.com,Dance"
+    ],
+    "MECH.txt": [
+        "105,Arun,MECH,arun@gmail.com"
+    ],
+    "IT.txt": [
+        "106,Priya,IT,priya@gmail.com,Robotics"
+    ]
+}
+
+for filename, lines in data.items():
+    with open("fest_data/" + filename, "w") as f:
+        f.write("\n".join(lines))
+
+# Registration processing
+departments = ["CSE", "ECE", "MECH", "IT", "CIVIL"]
+
+seen = set()
+master = []
+events = {}
+errors = []
+
+accepted = 0
+duplicates = 0
+invalid = 0
+damaged = 0
+missing = 0
+
+for dept in departments:
+    filename = "fest_data/" + dept + ".txt"
+
+    try:
+        with open(filename, "r") as f:
+            for line_no, line in enumerate(f, 1):
+                try:
+                    parts = line.strip().split(",")
+
+                    if len(parts) != 5:
+                        raise ValueError("Damaged record")
+
+                    reg, name, department, email, event_text = parts
+
+                    if not reg or not name or not department:
+                        raise ValueError("Missing field")
+
+                    if "@" not in email or "." not in email.split("@")[-1]:
+                        invalid += 1
+                        errors.append(
+                            f"{filename}, Line {line_no}: Invalid email"
+                        )
+                        continue
+
+                    if reg in seen:
+                        duplicates += 1
+                        errors.append(
+                            f"{filename}, Line {line_no}: Duplicate registration"
+                        )
+                        continue
+
+                    seen.add(reg)
+                    master.append(line.strip())
+                    accepted += 1
+
+                    for event in event_text.split(";"):
+                        event = event.strip()
+                        events.setdefault(event, []).append(
+                            reg + " - " + name
+                        )
+
+                except ValueError as e:
+                    damaged += 1
+                    errors.append(
+                        f"{filename}, Line {line_no}: {e}"
+                    )
+
+    except FileNotFoundError:
+        missing += 1
+        errors.append(filename + ": File not found")
+
+# Write clean master list
+with open("master_list.txt", "w") as f:
+    f.write("\n".join(master))
+
+# Write event-wise participant lists
+for event, participants in events.items():
+    filename = "event_lists/" + event + ".txt"
+
+    with open(filename, "w") as f:
+        f.write("\n".join(participants))
+
+# Write summary report
+with open("summary_report.txt", "w") as f:
+    f.write("COLLEGE FEST SUMMARY\n")
+    f.write("Accepted: " + str(accepted) + "\n")
+    f.write("Duplicates: " + str(duplicates) + "\n")
+    f.write("Invalid emails: " + str(invalid) + "\n")
+    f.write("Damaged records: " + str(damaged) + "\n")
+    f.write("Missing files: " + str(missing) + "\n")
+
+# Write error log
+with open("error_log.txt", "w") as f:
+    f.write("\n".join(errors))
+
+# Display results
+print("COLLEGE FEST REGISTRATION REPORT")
+print("--------------------------------")
+print("Accepted registrations:", accepted)
+print("Duplicate registrations:", duplicates)
+print("Invalid emails:", invalid)
+print("Damaged records:", damaged)
+print("Missing department files:", missing)
+
+print("\nEVENT-WISE PARTICIPANTS")
+for event, participants in events.items():
+    print(event, ":", len(participants))
+
+print("\nFiles generated successfully!")
+print("1. master_list.txt")
+print("2. event_lists/")
+print("3. summary_report.txt")
+print("4. error_log.txt")
+

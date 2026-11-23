@@ -1,1 +1,126 @@
 
+import time
+
+# Normalize phone numbers
+def normalize_number(number):
+    digits = ''.join(ch for ch in number if ch.isdigit())
+
+    if len(digits) == 10:
+        digits = "91" + digits
+
+    return "+" + digits
+
+
+# Merge contacts
+def merge_contacts(contacts):
+    merged = {}
+    phone_index = {}
+
+    for contact in contacts:
+        name = contact.get("name", "").strip()
+        numbers = contact.get("numbers", [])
+        emails = contact.get("emails", [])
+
+        clean_numbers = {
+            normalize_number(n) for n in numbers if n.strip()
+        }
+
+        # Find existing contact using phone number
+        existing = {
+            phone_index[n] for n in clean_numbers
+            if n in phone_index
+        }
+
+        if existing:
+            key = existing.pop()
+
+            # Merge any other matching contact groups
+            for other in existing:
+                merged[key]["names"].update(merged[other]["names"])
+                merged[key]["numbers"].update(merged[other]["numbers"])
+                merged[key]["emails"].update(merged[other]["emails"])
+
+                for num in merged[other]["numbers"]:
+                    phone_index[num] = key
+
+                del merged[other]
+
+            merged[key]["names"].add(name)
+            merged[key]["numbers"].update(clean_numbers)
+            merged[key]["emails"].update(emails)
+
+        else:
+            key = len(merged) + 1
+            merged[key] = {
+                "names": {name} if name else set(),
+                "numbers": clean_numbers,
+                "emails": set(emails)
+            }
+
+        for num in clean_numbers:
+            phone_index[num] = key
+
+    return merged
+
+
+# Sample contacts from three sources
+contacts = [
+    {
+        "name": "Dr. Ravi",
+        "numbers": ["+91 98400 12345"],
+        "emails": ["ravi@gmail.com"]
+    },
+    {
+        "name": "ravi kumar",
+        "numbers": ["9840012345", "9876543210"],
+        "emails": ["ravi@college.com"]
+    },
+    {
+        "name": "Anu",
+        "numbers": ["9123456789"],
+        "emails": ["anu@gmail.com"]
+    },
+    {
+        "name": "Dr. Ravi",
+        "numbers": ["98765 43210"],
+        "emails": ["ravi@gmail.com"]
+    },
+    {
+        "name": "Kiran",
+        "numbers": [],
+        "emails": []
+    }
+]
+
+# Display merged contacts
+result = merge_contacts(contacts)
+
+print("MERGED CONTACT LIST")
+print("-------------------")
+
+for key, data in result.items():
+    print("\nContact:", key)
+    print("Names:", sorted(data["names"]))
+    print("Numbers:", sorted(data["numbers"]))
+    print("Emails:", sorted(data["emails"]))
+
+
+# Performance measurement
+print("\nPERFORMANCE TEST")
+
+for size in [1000, 100000]:
+    test_data = [
+        {
+            "name": "Person " + str(i),
+            "numbers": ["90000" + str(i).zfill(5)],
+            "emails": ["person" + str(i) + "@gmail.com"]
+        }
+        for i in range(size)
+    ]
+
+    start = time.perf_counter()
+    merge_contacts(test_data)
+    end = time.perf_counter()
+
+    print(size, "contacts:", round(end - start, 4), "seconds")
+

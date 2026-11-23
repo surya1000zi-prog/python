@@ -1,1 +1,73 @@
 
+
+from decimal import Decimal, ROUND_HALF_UP
+
+# Rate card
+BASE_RATE = Decimal("30.00")
+FAT_STEP = Decimal("0.40")
+SNF_STEP = Decimal("0.30")
+BONUS_RATE = Decimal("0.50")
+
+def rate_per_litre(fat, snf, season):
+    fat = Decimal(str(fat))
+    snf = Decimal(str(snf))
+
+    if season == "April-June":
+        base = Decimal("32.00")
+        fat_value = Decimal("0.45")
+    else:
+        base = BASE_RATE
+        fat_value = FAT_STEP
+
+    fat_steps = ((fat - Decimal("3.50")) * 10).quantize(
+        Decimal("1"), rounding=ROUND_HALF_UP
+    )
+
+    snf_steps = ((snf - Decimal("8.50")) * 10).quantize(
+        Decimal("1"), rounding=ROUND_HALF_UP
+    )
+
+    rate = base + (fat_steps * fat_value) + (snf_steps * SNF_STEP)
+
+    return rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def bonus_amount(litres, ten_day_total):
+    if ten_day_total > 500:
+        return Decimal(str(litres)) * BONUS_RATE
+    return Decimal("0.00")
+
+
+def payout(litres, fat, snf, season, ten_day_total):
+    rate = rate_per_litre(fat, snf, season)
+    bonus = bonus_amount(litres, ten_day_total)
+    total = Decimal(str(litres)) * rate + bonus
+
+    return rate, bonus, total.quantize(Decimal("0.01"))
+
+
+# Main program
+if __name__ == "__main__":
+
+    rate, bonus, pay = payout(
+        600, 3.60, 8.50, "April-June", 600
+    )
+
+    print("Milk Payment Details")
+    print("--------------------")
+    print("Season: April-June")
+    print("Litres: 600")
+    print("Fat: 3.60")
+    print("SNF: 8.50")
+    print("Rate per litre: Rs.", rate)
+    print("Bonus: Rs.", bonus)
+    print("Total Payment: Rs.", pay)
+
+    rate, bonus, pay = payout(
+        400, 3.50, 8.50, "April-June", 400
+    )
+
+    print("\nSecond Farmer")
+    print("Rate per litre: Rs.", rate)
+    print("Bonus: Rs.", bonus)
+    print("Total Payment: Rs.", pay)
